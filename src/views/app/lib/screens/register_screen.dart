@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'home_screen.dart';
+import 'login_screen.dart';
+import 'dart:convert';
 
-class LoginScreen extends StatefulWidget {
+class RegisterScreen extends StatefulWidget {
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -17,29 +18,38 @@ class _LoginScreenState extends State<LoginScreen> {
   String _responseMessage = '';
   // String _responseMes = _responseMessage.message;
 
-  void _login() async {
+  void _register() async {
     String email = _emailController.text.trim();
     String username = _usernameController.text.trim();
     String password = _passwordController.text.trim();
 
-    var response = await _authService.login(email, username, password);
+    // Gọi API
+    Map<String, dynamic> response =
+        await _authService.register(email, username, password);
 
+    // Cập nhật giao diện dựa trên phản hồi
     setState(() {
-      if (response.isNotEmpty && response['status'] == 'success') {
-        String username =
-            response['data']['username']; // Lấy username từ response
-        String message = response['message']; // Lấy thông báo từ response
-
-        // Chuyển sang HomeScreen và truyền dữ liệu
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                HomeScreen(username: username, message: message),
+      if (response['status'] == 'success' && response['code'] == 201) {
+        // Hiển thị thông báo thành công
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tạo tài khoản thành công!'),
+            duration: Duration(seconds: 2),
           ),
         );
+
+        // Chuyển sang màn hình Login sau khi thông báo
+        Future.delayed(const Duration(seconds: 2), () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LoginScreen(),
+            ),
+          );
+        });
       } else {
-        _responseMessage = 'Login failed. Please try again.';
+        _responseMessage =
+            response['message'] ?? 'Đăng ký thất bại. Vui lòng thử lại!';
       }
     });
   }
@@ -70,11 +80,21 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _login,
-              child: const Text('Login'),
+              onPressed: _register,
+              child: const Text('Đăng ký'),
             ),
             const SizedBox(height: 20),
-            // Hiển thị thông tin response từ API
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LoginScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Đăng nhập')),
+
             Text(
               _responseMessage,
               style: const TextStyle(fontSize: 16, color: Colors.red),
