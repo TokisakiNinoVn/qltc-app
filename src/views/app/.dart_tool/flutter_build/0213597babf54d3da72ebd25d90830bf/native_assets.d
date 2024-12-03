@@ -1,0 +1,1 @@
+ C:\\Code\\TTTNNino\\qltc\\template-project\\src\\views\\app\\.dart_tool\\flutter_build\\0213597babf54d3da72ebd25d90830bf\\native_assets.yaml: 
