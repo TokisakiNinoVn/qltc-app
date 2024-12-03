@@ -54,16 +54,24 @@ app.get('/test', function(request, response) {
     message: "This is a test route."
   });
 });
+
 app.get('/api/public/test', function(request, response) {
   response.status(200).json({
     message: "Hehe, On \" /api/public/test\""
   });
 });
 
+
+
 // Định nghĩa các route khác
 app.use('/api/public', authRoutes);
 app.use('/api/private', loginRequired, privateRoutes);
-// console.log(variableName);
+
+app.get('/api/private/test', function(request, response) {
+  response.status(200).json({
+    message: "Hehe, On \" /api/private/test\""
+  });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
