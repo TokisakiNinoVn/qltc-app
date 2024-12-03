@@ -5,49 +5,52 @@ const AppError = require('../utils/app-error.js');
 const db = require('../config/db.config');
 const e = require('cors');
 
+
 exports.login = async (req, res, next) => {
-  const { username, email, password } = req.body;
+  const { phone, pin, password } = req.body;
 
   try {
     const [rows] = await db.pool.execute(
-      // 'SELECT * FROM users WHERE username = ? AND email = ? LIMIT 1',
-      'SELECT * FROM users WHERE username = ?',
-      // [username, email]
-      [username]
+      'SELECT * FROM users WHERE phone = ? LIMIT 1',
+      [phone]
     );
 
     if (rows.length === 0) {
-      return next(new AppError(HTTP_STATUS.NOT_FOUND, 'failed', 'Không tìm thấy người dùng', []), req, res, next);
+      return res.status(404).json({
+        status: "error",
+        message: 'Số điện thoại không đúng'
+      });
     }
 
     const user = rows[0];
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      return res.status(401).json({ message: 'Mật khẩu không chính xác' });
+    if (user.pin !== pin) {
+      return res.status(404).json({
+        status: "error",
+        message: 'Mã PIN không chính xác'
+      });
     }
 
-    // Cập nhật trạng thái
-    await db.pool.execute(
-      'UPDATE users SET status = ? WHERE id = ?',
-      ['online', user.id]
-    );
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({
+        status: "error",
+        message: 'Mật khẩu không chính xác'
+      });
+    }
 
     req.session.user = { id: user.id, name: user.name, role: user.role };
 
     res.status(200).json({
       status: 'success',
       data: {
-        // id: user.id,
+        id: user.id,
         username: user.username,
         name: user.name,
         email: user.email,
-        status: user.status,
-        // role: user.role,
+        verify: user.verify,
         phone: user.phone,
         gender: user.gender,
-        bio: user.bio,
-        address: user.address,
         updatedAt: user.updated_at,
       },
       message: 'Đăng nhập thành công',
@@ -57,27 +60,23 @@ exports.login = async (req, res, next) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 exports.register = async (req, res, next) => {
-  const { username, email, password } = req.body;
+  const { phone, password, pin } = req.body;
 
   try {
-    const [usernameCheck] = await db.pool.execute('SELECT * FROM users WHERE username = ?', [username]);
-    if (usernameCheck.length > 0) {
-      return next(new AppError(HTTP_STATUS.BAD_REQUEST, 'failed', 'Tên người dùng đã tồn tại', []), req, res, next);
+    const [phoneCheck] = await db.pool.execute('SELECT * FROM users WHERE phone = ?', [phone]);
+    if (phoneCheck.length > 0) {
+      return next(new AppError(HTTP_STATUS.BAD_REQUEST, 'failed', 'Số điện thoại đã được đăng ký', []), req, res, next);
     }
-
-    const [emailCheck] = await db.pool.execute('SELECT * FROM users WHERE email = ?', [email]);
-    if (emailCheck.length > 0) {
-      return next(new AppError(HTTP_STATUS.BAD_REQUEST, 'failed', 'Email đã tồn tại', []), req, res, next);
-    }
-
+    
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const createdAt = new Date();
 
-    await db.pool.execute('INSERT INTO users (username, email, password, createdAt) VALUES (?, ?, ?, ?)', [username, email, hashedPassword, createdAt]);
+    await db.pool.execute('INSERT INTO users (phone, pin, password, createdAt) VALUES (?, ?, ?, ?)', [phone, pin, hashedPassword, createdAt]);
 
-    const user = { username, email, createdAt };
+    const user = { phone, pin, password, createdAt };
 
     res.status(201).json({
       code: 201,

@@ -2,9 +2,9 @@ const express = require('express');
 var app = express();
 
 // Import child routers
-// const customerRouter = require("./user.routes");
+const userRouter = require("./user.routes");
 
 // Use child router
-// app.use("/customers", customerRouter);
+app.use("/users", userRouter);
 
 module.exports = app;
